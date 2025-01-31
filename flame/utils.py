@@ -22,7 +22,7 @@ from torch._utils import _get_available_device_type, _get_device_module
 from torch.distributed.device_mesh import DeviceMesh
 from torch.distributed.tensor import DTensor
 
-from torchtitan.logging import logger
+from .logging_utils import logger
 
 
 def get_device_info():

@@ -8,40 +8,35 @@ import json
 import os
 import time
 from datetime import timedelta
+from pprint import pformat
 
+import fla  # noqa
 import torch
 from datasets import interleave_datasets, load_dataset
 from torch.distributed.elastic.multiprocessing.errors import record
+from torchtitan.float8 import Float8Handler
+from torchtitan.parallelisms import ParallelDims
+from torchtitan.profiling import (maybe_enable_memory_snapshot,
+                                  maybe_enable_profiling)
 from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
-import fla  # noqa
 from flame import utils
 from flame.checkpoint import CheckpointManager, TrainState
 from flame.config_manager import JobConfig
 from flame.data import build_dataloader, shuffle
+from flame.logging_utils import init_logger, logger
 from flame.metrics import build_device_memory_monitor, build_metric_logger
 from flame.optimizer import build_lr_schedulers, build_optimizers
 from flame.parallelisms.parallelize_fla import parallelize_fla
 from flame.parallelisms.pipeline_fla import pipeline_fla
 from flame.utils import device_module, device_type
-from torchtitan.float8 import Float8Handler
-from torchtitan.logging import init_logger, logger
-from torchtitan.parallelisms import ParallelDims
-from torchtitan.profiling import (maybe_enable_memory_snapshot,
-                                  maybe_enable_profiling)
 
 
 # Enable debug tracing on failure: httgs://pytorch.org/docs/stable/elastic/errors.html
 @record
 def main(job_config: JobConfig):
-    init_logger()
-    logger.info(f"Starting job: {job_config.job.description}")
-
-    # used for colorful printing
-    color = utils.NoColor if job_config.metrics.disable_color_printing else utils.Color
-
     if job_config.job.print_args:
-        logger.info(f"{color.green}{json.dumps(job_config.to_dict(), indent=2, sort_keys=True)}{color.reset}")
+        logger.info(f"{json.dumps(job_config.to_dict(), indent=2, sort_keys=True)}")
 
     # take control of garbage collection to avoid stragglers
     gc_handler = utils.GarbageCollection(gc_freq=job_config.training.gc_freq)
@@ -61,6 +56,10 @@ def main(job_config: JobConfig):
     device_module.set_device(device)
 
     utils.init_distributed(job_config)
+
+    init_logger()
+    logger.info(pformat(job_config.to_dict()))
+    logger.info(f"Starting job: {job_config.job.description}")
 
     # initialize device memory monitor and get peak flops for MFU calculation
     device_memory_monitor = build_device_memory_monitor()
@@ -117,12 +116,10 @@ def main(job_config: JobConfig):
         else:
             if dataset.num_shards < min_num_shards:
                 logger.warning(
-                    f"{color.red}"
                     f"Dataset {job_config.training.dataset} has insufficient shards ({dataset.num_shards}). "
                     f"Need {min_num_shards} shards minimum for {dp_degree} data parallel workers × "
                     f"{job_config.training.num_workers} dataloader workers. "
                     f"Resharding dataset to {min_num_shards} shards and disabling streaming mode."
-                    f"{color.reset}"
                 )
                 dataset = load_dataset(
                     path=job_config.training.dataset,
@@ -177,8 +174,8 @@ def main(job_config: JobConfig):
                 num_proc=job_config.training.num_workers if not job_config.training.streaming else None
             )
             logger.info(
-                f"Subset {color.cyan}{datasets[i]}" + (f":{dataset_names[i]} " if dataset_names[i] else " ") +
-                f"(p = {prob:.3f}){color.reset}:\n" +
+                f"Subset {datasets[i]}" + (f":{dataset_names[i]} " if dataset_names[i] else " ") +
+                f"(p = {prob:.3f}):\n" +
                 f"{subset}"
             )
 
@@ -189,12 +186,10 @@ def main(job_config: JobConfig):
             else:
                 if subset.num_shards < min_num_shards:
                     logger.warning(
-                        f"{color.red}"
                         f"Dataset {datasets[i]} has insufficient shards ({subset.num_shards}). "
                         f"Need {min_num_shards} shards minimum for {dp_degree} data parallel workers × "
                         f"{job_config.training.num_workers} dataloader workers. "
                         f"Resharding dataset to {min_num_shards} shards and disabling streaming mode."
-                        f"{color.reset}"
                     )
                     # again, it's ok to directly shuffle the map-style dataset
                     # we expect an error raised if the map-style dataset still has not enough data shards
@@ -253,12 +248,12 @@ def main(job_config: JobConfig):
     # 3. context_len base on inputs
     model_config.vocab_size = tokenizer.vocab_size
 
-    logger.info(f"Building model from the config\n{color.green}{model_config}{color.reset}")
+    logger.info(f"Building model from the config\n{model_config}")
     with torch.device('meta'):
         model = AutoModelForCausalLM.from_config(model_config)
         # defer weight initialization until after parallelisms are applied
         model.apply(lambda m: setattr(m, '_is_hf_initialized', False))
-    logger.info(f"{color.blue}\n{model}{color.reset}\n")
+    logger.info(f"{model}")
 
     # a no-op hander if float8 is not enabled
     float8_handler = Float8Handler(job_config, parallel_dims)
@@ -375,18 +370,18 @@ def main(job_config: JobConfig):
     global_batch_size = job_config.training.batch_size * dp_degree * job_config.training.gradient_accumulation_steps
     num_tokens_per_step = global_batch_size * job_config.training.seq_len
     # train loop
-    logger.info(f"{color.red}***** Running training *****{color.reset}")
-    logger.info(f"{color.green}  Training starts at step {train_state.step + 1}")
-    logger.info(f"{color.green}  Number of tokens per sequence = {job_config.training.seq_len:,}")
-    logger.info(f"{color.green}  Gradient Accumulation steps = {job_config.training.gradient_accumulation_steps}")
-    logger.info(f"{color.green}  Instantaneous batch size (per device) = {job_config.training.batch_size:,}")
-    logger.info(f"{color.green}  Global batch size (w. parallel, distributed & accumulation) = {global_batch_size:,}"
+    logger.info(f"***** Running training *****")
+    logger.info(f"  Training starts at step {train_state.step + 1}")
+    logger.info(f"  Number of tokens per sequence = {job_config.training.seq_len:,}")
+    logger.info(f"  Gradient Accumulation steps = {job_config.training.gradient_accumulation_steps}")
+    logger.info(f"  Instantaneous batch size (per device) = {job_config.training.batch_size:,}")
+    logger.info(f"  Global batch size (w. parallel, distributed & accumulation) = {global_batch_size:,}"
                 f" ({num_tokens_per_step:,} tokens)")
-    logger.info(f"{color.green}  Total optimization steps = {job_config.training.steps:,} "
+    logger.info(f"  Total optimization steps = {job_config.training.steps:,} "
                 f"({job_config.training.steps * num_tokens_per_step:,} tokens)")
-    logger.info(f"{color.green}  Warmup steps = {job_config.training.warmup_steps:,}"
+    logger.info(f"  Warmup steps = {job_config.training.warmup_steps:,}"
                 f" ({job_config.training.warmup_steps * num_tokens_per_step:,} tokens)")
-    logger.info(f"{color.green}  Number of parameters = {model_param_count:,} {color.reset}")
+    logger.info(f"  Number of parameters = {model_param_count:,}")
 
     with maybe_enable_profiling(
         job_config, global_step=train_state.step
@@ -542,12 +537,12 @@ def main(job_config: JobConfig):
                 metric_logger.log(metrics, step=train_state.step)
 
                 logger.info(
-                    f"{color.cyan}step: {train_state.step:>8,} token: {train_state.token:>15,}  "
-                    f"{color.green}loss: {global_avg_loss:7.4f}  "
-                    f"{color.blue}lr: {last_lr:.4e} gnorm: {grad_norm:5.2f} "
-                    f"{color.yellow}memory: {device_mem_stats.max_reserved_gib:5.2f}GiB "
-                    f"{color.red}tgs: {round(tgs):7,} mfu: {mfu:6.2%} "
-                    f"{color.magenta}[{str(train_state.elapsed).split('.')[0]:>8}<{str(eta).split('.')[0]:>8}]{color.reset}"
+                    f"step: {train_state.step:>8,} token: {train_state.token:>15,}  "
+                    f"loss: {global_avg_loss:7.4f}  "
+                    f"lr: {last_lr:.4e} gnorm: {grad_norm:5.2f} "
+                    f"memory: {device_mem_stats.max_reserved_gib:5.2f}GiB "
+                    f"tgs: {round(tgs):7,} mfu: {mfu:6.2%} "
+                    f"[{str(train_state.elapsed).split('.')[0]:>8}<{str(eta).split('.')[0]:>8}]"
                 )
 
                 ntokens_since_last_log = 0

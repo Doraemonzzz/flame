@@ -16,7 +16,6 @@ from torch.distributed.checkpoint.state_dict import (StateDictOptions,
                                                      set_optimizer_state_dict)
 from torch.distributed.checkpoint.stateful import Stateful
 from torch.optim.lr_scheduler import LambdaLR
-
 from torchtitan.config_manager import JobConfig
 
 

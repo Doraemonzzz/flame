@@ -3,8 +3,8 @@
 # 🔥 Flame: Flash Linear Attention Made Easy
 
 </div>
- 
-Welcome to 🔥 `flame`, a minimal and efficient framework built on `torchtitan` for training Flash Linear Attention (FLA) models with blazing efficiency. 
+
+Welcome to 🔥 `flame`, a minimal and efficient framework built on `torchtitan` for training Flash Linear Attention (FLA) models with blazing efficiency.
 
 **Feature Highlights:**
 
@@ -20,10 +20,10 @@ To get started, clone the `flame` repository and install the required dependenci
 ```bash
 git clone https://github.com/fla-org/flame.git
 cd flame
-pip install . 
+pip install .
 ```
 
-`flame` manages minimal dependencies, only including `fla` and `torchtitan` as submodules. 
+`flame` manages minimal dependencies, only including `fla` and `torchtitan` as submodules.
 After installation, initialize and update the submodules:
 ```sh
 git submodule update --init --recursive
@@ -31,7 +31,7 @@ git submodule update --init --recursive
 
 ## Dataset Preparation
 
-`flame` streamlines dataset handling with smart on-the-fly processing. 
+`flame` streamlines dataset handling with smart on-the-fly processing.
 
 For most datasets:
 ```py
@@ -80,7 +80,7 @@ bash train.sh \
   --metrics.log_freq 4
 ```
 
-We provide several [config files](https://github.com/fla-org/flame/tree/main/configs) for different models. 
+We provide several [config files](https://github.com/fla-org/flame/tree/main/configs) for different models.
 By default, the learning rate is set to 3e-4 with a cosine scheduler. Other schedulers, such as WSD (wsd), are also supported.
 For a detailed explanation of all parameters, run:
 
@@ -390,7 +390,7 @@ options:
 
 ### Training with multiple datasets
 
-If you wish to train a model with all-round capabilities (e.g., code, math, and multilingual ability), it's necessary to train on multiple datasets. 
+If you wish to train a model with all-round capabilities (e.g., code, math, and multilingual ability), it's necessary to train on multiple datasets.
 `flame` allows training with multiple datasets easily.
 For example, you can specify the following arguments to train on 6 datasets with different proportions:
 
@@ -401,8 +401,8 @@ For example, you can specify the following arguments to train on 6 datasets with
 
 ## Multi-node training
 
-If you have access to multi-node GPUs, consider leveraging them for optimal performance. 
-This process is straightforward and well-documented in the PyTorch [docs](https://pytorch.org/docs/stable/elastic/run.html). 
+If you have access to multi-node GPUs, consider leveraging them for optimal performance.
+This process is straightforward and well-documented in the PyTorch [docs](https://pytorch.org/docs/stable/elastic/run.html).
 
 To set up multi-node training:
 * Set the environment variables `MASTER_ADDR=<ip>` and `MASTER_PORT=<port>` before running the training script across all nodes.

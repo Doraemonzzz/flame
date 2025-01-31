@@ -15,9 +15,8 @@ from datasets import Dataset, IterableDataset
 from datasets.iterable_dataset import ShufflingConfig
 from torch.distributed.checkpoint.stateful import Stateful
 from torchdata.stateful_dataloader import StatefulDataLoader
-from transformers import PreTrainedTokenizer
-
 from torchtitan.logging import logger
+from transformers import PreTrainedTokenizer
 
 
 class BufferShuffledIterableDataset(IterableDataset):

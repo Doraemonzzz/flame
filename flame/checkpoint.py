@@ -25,7 +25,6 @@ from torch.distributed.checkpoint.state_dict import (StateDictOptions,
                                                      set_model_state_dict)
 from torch.distributed.checkpoint.stateful import Stateful
 from torch.utils.data import DataLoader
-
 from torchtitan.config_manager import TORCH_DTYPE_MAP, JobConfig
 from torchtitan.logging import init_logger, logger
 from torchtitan.optimizer import OptimizersContainer, SchedulersContainer
