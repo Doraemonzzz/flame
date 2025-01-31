@@ -25,7 +25,7 @@ from torchtitan.logging import logger
 from torchtitan.parallelisms.parallel_dims import ParallelDims
 
 
-def parallelize_fla(
+def parallelize_xmixers(
     model: nn.Module,
     world_mesh: DeviceMesh,
     parallel_dims: ParallelDims,
@@ -155,7 +155,7 @@ def apply_tp(
     # NOTE: At the cost of model code change, we can accelerate Sequence Parallel
     #       by folding (and unfolding) the batch dimension and the sequence dimension.
     #       Examples can be found at https://github.com/pytorch/torchtitan/pull/437
-    for _, block in enumerate(getattr(model, model.base_model_prefix).layers):
+    for _, block in enumerate(model.model.layers):
         layer_plan = {
             "attn_norm": SequenceParallel(),
             "attn": prepare_module_input(
@@ -172,7 +172,7 @@ def apply_tp(
                 desired_input_layouts=(Replicate(),),
             ),
             "mlp.gate_proj": colwise_parallel(),
-            "mlp.down_proj": rowwise_parallel(output_layouts=Shard(1))
+            "mlp.down_proj": rowwise_parallel(output_layouts=Shard(1)),
         }
 
         parallelize_module(
@@ -212,9 +212,9 @@ def apply_compile(model: nn.Module):
     Apply torch.compile to each TransformerBlock, which makes compilation efficient due to
     repeated structure. Alternatively one can compile the whole model (after applying DP).
     """
-    for layer_id, block in getattr(model, model.base_model_prefix).layers.named_children():
+    for layer_id, block in model.model.layers.named_children():
         block = torch.compile(block, fullgraph=True)
-        getattr(model, model.base_model_prefix).layers.register_module(layer_id, block)
+        model.model.layers.register_module(layer_id, block)
 
     logger.info("Compiling each TransformerBlock with torch.compile")
 
@@ -235,7 +235,7 @@ def apply_fsdp(
     if cpu_offload:
         fsdp_config["offload_policy"] = CPUOffloadPolicy()
 
-    for layer_id, block in enumerate(getattr(model, model.base_model_prefix).layers):
+    for layer_id, block in enumerate(model.model.layers):
         if pp_enabled:
             # For PP, do not reshard after forward to avoid per-microbatch
             # all-gathers, which can be expensive and non-overlapped
@@ -243,7 +243,7 @@ def apply_fsdp(
         else:
             # As an optimization, do not reshard after forward for the last
             # transformer block since FSDP would prefetch it immediately
-            reshard_after_forward = int(layer_id) < len(getattr(model, model.base_model_prefix).layers) - 1
+            reshard_after_forward = int(layer_id) < len(model.model.layers) - 1
         fully_shard(
             block,
             **fsdp_config,

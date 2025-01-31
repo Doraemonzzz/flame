@@ -106,6 +106,13 @@ class JobConfig:
             default="fla-hub/gla-1.3B-100B",
             help="Tokenizer path",
         )
+        self.parser.add_argument(
+            "--model.model_source",
+            type=str,
+            default="xmixers",
+            help="The source of the model to use",
+            choices=["fla", "xmixers"],
+        )
 
         # profiling configs
         self.parser.add_argument(
@@ -185,7 +192,10 @@ class JobConfig:
             "--training.seq_len", type=int, default=2048, help="Sequence length"
         )
         self.parser.add_argument(
-            "--training.context_len", type=int, default=2048, help="Max length allowed for each sequence"
+            "--training.context_len",
+            type=int,
+            default=2048,
+            help="Max length allowed for each sequence",
         )
         self.parser.add_argument(
             "--training.varlen",
@@ -224,32 +234,32 @@ class JobConfig:
         self.parser.add_argument(
             "--training.dataset",
             default="HuggingFaceFW/fineweb-edu",
-            help="Dataset to use, with comma separated values"
+            help="Dataset to use, with comma separated values",
         )
         self.parser.add_argument(
             "--training.dataset_name",
             default=None,
-            help="The name of the dataset config, with comma separated values if provided"
+            help="The name of the dataset config, with comma separated values if provided",
         )
         self.parser.add_argument(
             "--training.dataset_split",
             default=None,
-            help="Dataset split to use, with comma separated values if provided"
+            help="Dataset split to use, with comma separated values if provided",
         )
         self.parser.add_argument(
             "--training.data_dir",
             default=None,
-            help="Data dirs to use, with comma separated values if provided"
+            help="Data dirs to use, with comma separated values if provided",
         )
         self.parser.add_argument(
             "--training.data_files",
             default=None,
-            help="Data files to use, with comma separated values if provided"
+            help="Data files to use, with comma separated values if provided",
         )
         self.parser.add_argument(
             "--training.data_probs",
             default=None,
-            help="Data sampling probabilities, with comma separated values if provided"
+            help="Data sampling probabilities, with comma separated values if provided",
         )
         self.parser.add_argument(
             "--training.streaming",
@@ -260,14 +270,14 @@ class JobConfig:
             "--training.num_workers",
             type=int,
             default=32,
-            help="Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process."
+            help="Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process.",
         )
         self.parser.add_argument(
             "--training.prefetch_factor",
             type=int,
             default=2,
             help="Number of batches loaded in advance by each worker."
-                 "2 means there will be a total of 2 * num_workers batches prefetched across all workers."
+            "2 means there will be a total of 2 * num_workers batches prefetched across all workers.",
         )
         self.parser.add_argument(
             "--training.data_parallel_replicate_degree",
@@ -355,6 +365,11 @@ class JobConfig:
             "--training.deterministic",
             action="store_true",
             help="Use deterministic algorithms wherever possible, may be slower",
+        )
+        self.parser.add_argument(
+            "--training.debug",
+            action="store_true",
+            help="Whether to print debug information",
         )
         # metrics configs
         self.parser.add_argument(

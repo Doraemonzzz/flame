@@ -10,12 +10,7 @@ from torch.distributed.checkpoint.format_utils import dcp_to_torch_save
 from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 
-def save_pretrained(
-    checkpoint: str,
-    path: str,
-    config: str,
-    tokenizer: str
-):
+def save_pretrained(checkpoint: str, path: str, config: str, tokenizer: str):
     print(f"Loading the config from {config}")
     config = AutoConfig.from_pretrained(config, trust_remote_code=True)
 
@@ -27,7 +22,7 @@ def save_pretrained(
     tokenizer.save_pretrained(path)
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        checkpoint_path = os.path.join(tmpdir, 'checkpoint.pt')
+        checkpoint_path = os.path.join(tmpdir, "checkpoint.pt")
         print(f"Saving the distributed checkpoint to {checkpoint_path}")
         dcp_to_torch_save(checkpoint, checkpoint_path)
 
@@ -35,7 +30,7 @@ def save_pretrained(
         model = AutoModelForCausalLM.from_config(config)
         print(model)
         print("Loading state dict from the checkpoint")
-        model.load_state_dict(torch.load(checkpoint_path, map_location='cpu')['model'])
+        model.load_state_dict(torch.load(checkpoint_path, map_location="cpu")["model"])
         print(f"Saving the model to {path}")
         model.save_pretrained(path)
 
