@@ -20,12 +20,13 @@ from torchtitan.parallelisms import ParallelDims
 from torchtitan.profiling import (maybe_enable_memory_snapshot,
                                   maybe_enable_profiling)
 from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
+from xmixers.utils import logger
 
 from flame import utils
 from flame.checkpoint import CheckpointManager, TrainState
 from flame.config_manager import JobConfig
 from flame.data import build_dataloader, shuffle
-from flame.logging_utils import init_logger, logger
+# from torchtitan.logging import init_logger, logger
 from flame.metrics import build_device_memory_monitor, build_metric_logger
 from flame.optimizer import build_lr_schedulers, build_optimizers
 from flame.parallelisms import parallelize_model, pipeline_model
@@ -35,6 +36,12 @@ from flame.utils import device_module, device_type
 # Enable debug tracing on failure: httgs://pytorch.org/docs/stable/elastic/errors.html
 @record
 def main(job_config: JobConfig):
+    # init_logger()
+    logger.info(pformat(job_config.to_dict()))
+    logger.info(f"Starting job: {job_config.job.description}")
+
+    xmixers.utils.logger = logger
+
     if job_config.job.print_args:
         logger.info(f"{json.dumps(job_config.to_dict(), indent=2, sort_keys=True)}")
 
@@ -56,10 +63,6 @@ def main(job_config: JobConfig):
     device_module.set_device(device)
 
     utils.init_distributed(job_config)
-
-    init_logger()
-    logger.info(pformat(job_config.to_dict()))
-    logger.info(f"Starting job: {job_config.job.description}")
 
     # initialize device memory monitor and get peak flops for MFU calculation
     device_memory_monitor = build_device_memory_monitor()
@@ -347,8 +350,12 @@ def main(job_config: JobConfig):
                 model_source=job_config.model_source,
             )
             m.to_empty(device=init_device)
-            with torch.no_grad():
-                m.post_init()
+            if job_config.model.model_source == "xmixers":
+                with torch.no_grad():
+                    m.post_init_weights()
+            else:
+                with torch.no_grad():
+                    m.post_init()
             m.train()
     else:
         # apply PT-D Tensor Parallel, activation checkpointing, torch.compile, Data Parallel
@@ -359,9 +366,14 @@ def main(job_config: JobConfig):
             job_config=job_config,
             model_source=job_config.model.model_source,
         )
+        logger.info(model)
         model.to_empty(device=init_device)
-        with torch.no_grad():
-            model.post_init()
+        if job_config.model.model_source == "xmixers":
+            with torch.no_grad():
+                model.post_init_weights()
+        else:
+            with torch.no_grad():
+                model.post_init()
         model.train()
         model_parts = [model]
 

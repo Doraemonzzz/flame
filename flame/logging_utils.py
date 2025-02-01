@@ -3,7 +3,7 @@ import os
 
 import torch.distributed as dist
 
-logger = logging.getLogger()
+# logger = logging.getLogger()
 
 
 def is_dist_avail_and_initialized():
