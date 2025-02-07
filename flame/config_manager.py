@@ -597,6 +597,23 @@ class JobConfig:
             help="Load the checkpoint at the specified step. If -1, load the latest checkpoint.",
         )
 
+        # activation checkpointing configs
+        self.parser.add_argument(
+            "--activation_checkpoint.mode",
+            type=str,
+            default="none",
+            help="Type of activation checkpointing to use ['none', 'full', 'selective']",
+        )
+        self.parser.add_argument(
+            "--activation_checkpoint.selective_ac_option",
+            type=str,
+            default="2",  # 2 = checkpoint every other layer
+            help="""
+                Selective activation checkpointing options ['int', 'op'].
+                'int' (e.g., 2) for every nth layer, or 'op' for op level ac.
+            """,
+        )
+
         # float8 configs
         self.parser.add_argument(
             "--float8.enable_float8_linear",
