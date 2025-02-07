@@ -16,6 +16,6 @@
   "rescale_type": 2,
   "tie_word_embeddings": true,
   "token_mixer_init_type": 4,
-  "use_lrpe": true,
-  "use_gate_linear": true
+  "use_gate_linear": true,
+  "use_lrpe": true
 }
