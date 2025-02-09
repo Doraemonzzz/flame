@@ -26,7 +26,6 @@ from flame import utils
 from flame.checkpoint import CheckpointManager, TrainState
 from flame.config_manager import JobConfig
 from flame.data import build_dataloader, shuffle
-# from torchtitan.logging import init_logger, logger
 from flame.metrics import build_device_memory_monitor, build_metric_logger
 from flame.optimizer import build_lr_schedulers, build_optimizers
 from flame.parallelisms import parallelize_model, pipeline_model

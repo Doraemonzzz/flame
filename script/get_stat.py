@@ -27,7 +27,7 @@ def get_stat(log_file, cols):
         res[col] = 0
     res["memory"] = []
     res["tgs"] = []
-    pattern = r"memory: ([\d.]+)GiB tgs:\s*([\d,]+)"
+    pattern = r"memory:\s*(\d+\.?\d*)GiB.*?tgs:\s*(\d+(?:,\d+)*)"
     mode_pattern = r"'mode':\s*'(\w+)'"
     selective_pattern = r"'selective_ac_option':\s*'(\d+)'"
 
