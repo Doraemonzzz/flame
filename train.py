@@ -603,12 +603,21 @@ def main(job_config: JobConfig):
 
                 time_delta = time.perf_counter() - time_last_log
 
+                # TODO: Update this later
+                # # update train state
+                # train_state.token += utils.dist_reduce(
+                #     torch.tensor(ntokens_since_last_log, device=device),
+                #     "sum",
+                #     world_mesh["dp_cp"],
+                # )
+
                 # update train state
-                train_state.token += utils.dist_reduce(
-                    torch.tensor(ntokens_since_last_log, device=device),
-                    "sum",
-                    world_mesh["dp_cp"],
+                train_state.token += (
+                    ntokens_since_last_log
+                    * parallel_dims.world_size
+                    / parallel_dims.non_data_parallel_size
                 )
+
                 train_state.elapsed += timedelta(seconds=time_delta)
                 train_state.log_steps.append(train_state.step)
                 train_state.global_avg_losses.append(global_avg_loss)

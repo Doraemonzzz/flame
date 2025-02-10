@@ -36,6 +36,7 @@ def get_stat(log_file, cols):
             for col in [
                 "model_source",
                 "model_type",
+                "tie_word_embeddings"
             ]:
                 if col in line:
                     res[col] = line.split()[-1].strip(",").strip("'").strip('"')
@@ -86,6 +87,7 @@ def main(args):
         "'compile'",
         "activation_checkpoint",
         "tensor_parallel_degree",
+        "tie_word_embeddings"
     ]
     print_array(cols)
 

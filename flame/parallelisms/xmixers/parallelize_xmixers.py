@@ -28,6 +28,7 @@ from torchtitan.config_manager import TORCH_DTYPE_MAP, JobConfig
 from torchtitan.logging import logger
 from torchtitan.parallelisms.parallel_dims import ParallelDims
 
+from .loss_parallel import LossParallel
 
 def parallelize_xmixers(
     model: nn.Module,
@@ -123,12 +124,16 @@ def apply_tp(
         model,
         tp_mesh,
         {
-            "model.model.embeddings": RowwiseParallel(
+            "model.embed_tokens": RowwiseParallel(
                 input_layouts=Replicate(),
                 output_layouts=Shard(1),
             ),
-            "model.model.norm": SequenceParallel(),
-            "model.lm_head": ColwiseParallel(
+            "model.final_norm": SequenceParallel(),
+            # "loss": LossParallel(
+            #     input_layouts=[Replicate()],
+            #     output_layouts=[Shard(1)],
+            # ),
+            "lm_head": ColwiseParallel(
                 input_layouts=Shard(1),
                 output_layouts=Shard(-1) if loss_parallel else Replicate(),
                 use_local_output=not loss_parallel,
@@ -164,22 +169,31 @@ def apply_tp(
     #       Examples can be found at https://github.com/pytorch/torchtitan/pull/437
     for _, block in enumerate(model.model.layers):
         layer_plan = {
-            "attn_norm": SequenceParallel(),
-            "attn": prepare_module_input(
-                input_layouts=(Shard(1), None),
-                desired_input_layouts=(Replicate(), None),
+            "token_norm": SequenceParallel(),
+            "token_mixer": prepare_module_input(
+                input_kwarg_layouts={
+                    "x": Shard(1),
+                },
+                desired_input_kwarg_layouts={
+                    "x": Replicate(),
+                },
             ),
-            "attn.q_proj": colwise_parallel(),
-            "attn.k_proj": colwise_parallel(),
-            "attn.v_proj": colwise_parallel(),
-            "attn.o_proj": rowwise_parallel(output_layouts=Shard(1)),
-            "mlp_norm": SequenceParallel(),
-            "mlp": prepare_module_input(
-                input_layouts=(Shard(1),),
-                desired_input_layouts=(Replicate(),),
+            "token_mixer.q_proj": colwise_parallel(),
+            "token_mixer.k_proj": colwise_parallel(),
+            "token_mixer.v_proj": colwise_parallel(),
+            "token_mixer.o_proj": rowwise_parallel(output_layouts=Shard(1)),
+            "channel_norm": SequenceParallel(),
+            "channel_mixer": prepare_module_input(
+                input_kwarg_layouts={
+                    "x": Shard(1),
+                },
+                desired_input_kwarg_layouts={
+                    "x": Replicate(),
+                },
             ),
-            "mlp.gate_proj": colwise_parallel(),
-            "mlp.down_proj": rowwise_parallel(output_layouts=Shard(1)),
+            "channel_mixer.w1": colwise_parallel(),
+            "channel_mixer.w2": colwise_parallel(),
+            "channel_mixer.w3": rowwise_parallel(output_layouts=Shard(1)),
         }
 
         parallelize_module(
