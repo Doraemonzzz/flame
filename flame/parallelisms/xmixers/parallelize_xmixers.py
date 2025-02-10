@@ -30,6 +30,7 @@ from torchtitan.parallelisms.parallel_dims import ParallelDims
 
 from .loss_parallel import LossParallel
 
+
 def parallelize_xmixers(
     model: nn.Module,
     world_mesh: DeviceMesh,
