@@ -455,7 +455,7 @@ class DataCollatorForLanguageModeling:
                 ).unsqueeze(0)
             else:
                 # determine boundaries by bos/eos positions
-                if self.tokenizer.add_bos_token:
+                if self.tokenizer.bos_token_id is not None:
                     cu_seqlens = []
                     if batch["input_ids"][0, 0] != self.tokenizer.bos_token_id:
                         cu_seqlens.append(torch.tensor([0]))
@@ -468,7 +468,7 @@ class DataCollatorForLanguageModeling:
                     batch["cu_seqlens"] = torch.cat(cu_seqlens, dim=0).to(
                         dtype=torch.int32
                     )
-                elif self.tokenizer.add_eos_token:
+                elif self.tokenizer.eos_token_id is not None:
                     cu_seqlens = [torch.tensor([0])]
                     cu_seqlens.append(
                         torch.where(batch["input_ids"].eq(self.tokenizer.eos_token_id))[

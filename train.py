@@ -312,7 +312,7 @@ def main(job_config: JobConfig):
     num_flop_per_token = utils.get_num_flop_per_token(
         utils.get_num_params(model, exclude_embedding=True),
         model_config,
-        job_config.training.seq_len,
+        job_config.training.context_len,
     )
 
     # move sharded model to CPU/GPU and initialize weights via DTensor
@@ -537,7 +537,9 @@ def main(job_config: JobConfig):
                     # Non-PP forward / backward
                     with train_context(optional_context_parallel_ctx):
                         output = model(
-                            input_ids=input_ids, labels=labels, cu_seqlens=cu_seqlens
+                            input_ids=input_ids,
+                            labels=labels,
+                            cu_seqlens=cu_seqlens,
                         )
                         loss = output.loss
                         loss.backward()
