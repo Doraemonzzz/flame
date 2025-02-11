@@ -1,0 +1,137 @@
+import argparse
+import os
+import re
+from datetime import datetime
+
+import numpy as np
+
+
+def print_array(array):
+    string = array[0]
+    for col in array[1:]:
+        string += f",{col}"
+
+    print(string)
+
+
+def print_dict(array, dict):
+    string = f"{dict[array[0]]}"
+    for col in array[1:]:
+        string += f",{dict[col]}"
+
+    print(string)
+
+
+def get_stat(log_file, cols):
+    res = {}
+    for col in cols:
+        res[col] = 0
+    res["memory"] = []
+    res["tgs"] = []
+    memory_tgs_pattern = r"memory:\s*(\d+\.?\d*)GiB.*?tgs:\s*(\d+(?:,\d+)*)"
+    token_loss_pattern = r"token:\s*([\d,]+\.\d+)\s+loss:\s*(\d+\.\d+)"
+    mode_pattern = r"'mode':\s*'(\w+)'"
+    selective_pattern = r"'selective_ac_option':\s*'(\d+)'"
+    finish = False
+
+    earliest_time = None
+    latest_time = None
+
+    with open(log_file, "r") as f:
+        for line in f.readlines():
+            if "Training completed" in line:
+                finish = True
+
+            if "INFO" in line:
+                time_match = re.search(r"(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})", line)
+                if time_match:
+                    try:
+                        current_time = datetime.strptime(
+                            time_match.group(1), "%Y-%m-%d %H:%M:%S"
+                        )
+
+                        # 更新最早和最晚时间
+                        if earliest_time is None or current_time < earliest_time:
+                            earliest_time = current_time
+                        if latest_time is None or current_time > latest_time:
+                            latest_time = current_time
+                    except ValueError:
+                        continue
+
+            for col in ["model_source", "model_type"]:
+                if col in line:
+                    res[col] = line.split()[-1].strip(",").strip("'").strip('"')
+            for col in ["parameters"]:
+                if col in line and res[col] == 0:
+                    res[col] = round(float(line.split()[-1].replace(",", "")) / 1e9, 4)
+            for col in [
+                "tgs",
+            ]:
+                if col in line:
+                    match = re.search(memory_tgs_pattern, line)
+                    if match:
+                        res["memory"].append(float(match.group(1)))
+                        res["tgs"].append(float(match.group(2).replace(",", "")))
+            if "loss" in line:
+                match = re.search(token_loss_pattern, line)
+                if match:
+                    res["token"] = round(
+                        float(match.group(1).replace(",", "")) / 1e9, 2
+                    )
+                    res["loss"] = round(float(match.group(2)), 4)
+            for col in [
+                "batch_size",
+                "context_len",
+                "'compile'",
+                "tensor_parallel_degree",
+                "'eps'",
+            ]:
+                if col in line:
+                    res[col] = line.split()[-1].strip(",")
+
+    res["memory"] = round(np.mean(res["memory"][-10:]), 2)
+    res["tgs"] = round(np.mean(res["tgs"][-10:]), 2)
+
+    # get time
+    duration = latest_time - earliest_time
+    time = duration.total_seconds() / 3600
+    res["time"] = round(time, 2)
+
+    return res, finish
+
+
+def main(args):
+    cols = [
+        "model_source",
+        "model_type",
+        "parameters",
+        "loss",
+        "token",
+        "memory",
+        "tgs",
+        "batch_size",
+        "context_len",
+        "'eps'",
+        "time",
+    ]
+    print_array(cols)
+
+    log_file = args.log_file
+    log_dir = args.log_dir
+    if log_dir == "":
+        stat, finish = get_stat(log_file, cols)
+        if finish:
+            print_dict(cols, stat)
+    else:
+        for log_file in os.listdir(log_dir):
+            stat, finish = get_stat(os.path.join(log_dir, log_file), cols)
+            if finish:
+                print_dict(cols, stat)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--log_file", type=str, default="")
+    parser.add_argument("--log_dir", type=str, default="")
+    args = parser.parse_args()
+    main(args)
