@@ -11,15 +11,23 @@ from torch.distributed.checkpoint.format_utils import dcp_to_torch_save
 from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 
-def save_pretrained(checkpoint: str, path: str, config: str, tokenizer: str):
+def save_pretrained(
+    checkpoint: str,
+    path: str,
+    config: str,
+    tokenizer: str,
+    model_max_length: int = 2048,
+):
     print(f"Loading the tokenizer from {tokenizer}")
     tokenizer = AutoTokenizer.from_pretrained(tokenizer, trust_remote_code=True)
+    tokenizer.model_max_length = model_max_length
     print(f"Saving the tokenizer to {path}")
 
     print(f"Loading the config from {config}")
     config = AutoConfig.from_pretrained(config, trust_remote_code=True)
     config.vocab_size = tokenizer.vocab_size
     config.name_or_path = ""
+    config.max_position_embeddings = model_max_length
     print(f"Saving the config to {path}")
     config.save_pretrained(path)
     tokenizer.save_pretrained(path)
@@ -46,5 +54,8 @@ if __name__ == "__main__":
     parser.add_argument("--path", type=str, required=True)
     parser.add_argument("--config", type=str, required=True)
     parser.add_argument("--tokenizer", type=str, required=True)
+    parser.add_argument("--model_max_length", type=int, default=2048)
     args = parser.parse_args()
-    save_pretrained(args.checkpoint, args.path, args.config, args.tokenizer)
+    save_pretrained(
+        args.checkpoint, args.path, args.config, args.tokenizer, args.model_max_length
+    )
