@@ -6,19 +6,22 @@ import tempfile
 
 import fla  # noqa
 import torch
+import xmixers  # noqa
 from torch.distributed.checkpoint.format_utils import dcp_to_torch_save
 from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 
 def save_pretrained(checkpoint: str, path: str, config: str, tokenizer: str):
-    print(f"Loading the config from {config}")
-    config = AutoConfig.from_pretrained(config, trust_remote_code=True)
-
-    print(f"Saving the config to {path}")
-    config.save_pretrained(path)
     print(f"Loading the tokenizer from {tokenizer}")
     tokenizer = AutoTokenizer.from_pretrained(tokenizer, trust_remote_code=True)
     print(f"Saving the tokenizer to {path}")
+
+    print(f"Loading the config from {config}")
+    config = AutoConfig.from_pretrained(config, trust_remote_code=True)
+    config.vocab_size = tokenizer.vocab_size
+    config.name_or_path = ""
+    print(f"Saving the config to {path}")
+    config.save_pretrained(path)
     tokenizer.save_pretrained(path)
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -30,7 +33,9 @@ def save_pretrained(checkpoint: str, path: str, config: str, tokenizer: str):
         model = AutoModelForCausalLM.from_config(config)
         print(model)
         print("Loading state dict from the checkpoint")
-        model.load_state_dict(torch.load(checkpoint_path, map_location="cpu")["model"])
+        model.load_state_dict(
+            torch.load(checkpoint_path, map_location="cpu", weights_only=False)["model"]
+        )
         print(f"Saving the model to {path}")
         model.save_pretrained(path)
 
