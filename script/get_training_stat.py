@@ -81,7 +81,7 @@ def get_stat(log_file, cols):
                     res["loss"] = round(float(match.group(2)), 4)
             for col in [
                 "batch_size",
-                "context_len",
+                "seq_len",
                 "'compile'",
                 "tensor_parallel_degree",
                 "'eps'",
@@ -110,7 +110,7 @@ def main(args):
         "memory",
         "tgs",
         "batch_size",
-        "context_len",
+        "seq_len",
         "'eps'",
         "time",
     ]
