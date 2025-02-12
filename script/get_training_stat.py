@@ -82,20 +82,29 @@ def get_stat(log_file, cols):
             for col in [
                 "batch_size",
                 "seq_len",
+                "context_len",
                 "'compile'",
                 "tensor_parallel_degree",
                 "'eps'",
+                "varlen",
+                "warmup_steps",
             ]:
                 if col in line:
                     res[col] = line.split()[-1].strip(",")
+
+            if '"steps"' in line:
+                res["steps"] = line.split()[-1].strip(",")
 
     res["memory"] = round(np.mean(res["memory"][-10:]), 2)
     res["tgs"] = round(np.mean(res["tgs"][-10:]), 2)
 
     # get time
-    duration = latest_time - earliest_time
-    time = duration.total_seconds() / 3600
-    res["time"] = round(time, 2)
+    try:
+        duration = latest_time - earliest_time
+        time = duration.total_seconds() / 3600
+        res["time"] = round(time, 2)
+    except:
+        res["time"] = 0
 
     return res, finish
 
@@ -110,8 +119,12 @@ def main(args):
         "memory",
         "tgs",
         "batch_size",
+        "context_len",
         "seq_len",
         "'eps'",
+        "steps",
+        "warmup_steps",
+        "varlen",
         "time",
     ]
     print_array(cols)
