@@ -26,9 +26,17 @@ def print_dict(array, dict):
 
 
 def get_params(
-    token_mixer, channel_mixer, num_layer, embed_dim, head_dim, original_vocab_size
+    token_mixer,
+    channel_mixer,
+    num_layer,
+    embed_dim,
+    head_dim,
+    original_vocab_size,
+    q_rank=8,
+    kv_rank=2,
+    num_heads=-1,
 ):
-    num_heads = embed_dim // head_dim
+    num_heads = embed_dim // head_dim if num_heads == -1 else num_heads
     vocab_size = pad_embed_dim(original_vocab_size)
     if token_mixer == "hgru3":
         token_mixer_params = (
@@ -36,6 +44,14 @@ def get_params(
         )
     elif token_mixer in ["hgru2", "attn"]:
         token_mixer_params = embed_dim * embed_dim * 4
+    elif token_mixer == "mpa":
+        mid_dim = head_dim * num_heads
+        token_mixer_params = embed_dim * (mid_dim * 2 + head_dim + num_heads)
+    elif token_mixer == "tpa":
+        mid_dim = head_dim * num_heads
+        token_mixer_params = embed_dim * (
+            mid_dim + (q_rank + 2 * kv_rank) * (head_dim + num_heads)
+        )
 
     if channel_mixer == "ffn":
         coef = 2
@@ -65,6 +81,8 @@ def get_params(
         "embed_params": embed_params,
         "total_params_tied": total_params_tied,
         "total_params_untied": total_params_untied,
+        "q_rank": q_rank,
+        "kv_rank": kv_rank,
     }
     return res
 
@@ -72,6 +90,8 @@ def get_params(
 original_vocab_size = 50272
 
 cols = [
+    "token_mixer",
+    "channel_mixer",
     "non_embed_params",
     "embed_params",
     "total_params_tied",
@@ -85,6 +105,8 @@ cols = [
     "mid_dim",
     "original_vocab_size",
     "vocab_size",
+    "q_rank",
+    "kv_rank",
 ]
 
 hyper_params = {
@@ -113,23 +135,54 @@ hyper_params = {
         "embed_dim": 4096,
         "head_dim": 128,
     },
+    "13B": {
+        "num_layer": 40,
+        "embed_dim": 5120,
+        "head_dim": 128,
+    },
 }
 
 print_array(cols)
 
-token_mixers = ["attn"]
+token_mixers = ["attn", "mpa", "tpa"]
 channel_mixers = ["glu"]
 
 for token_mixer in token_mixers:
     for channel_mixer in channel_mixers:
         for key in hyper_params.keys():
             value = hyper_params[key]
+            num_layer = value["num_layer"]
+            embed_dim = value["embed_dim"]
+            head_dim = value["head_dim"]
+            # for tpa
+            if token_mixer == "tpa":
+                num_heads = embed_dim // head_dim * 3
+            elif token_mixer == "mpa":
+                num_heads = embed_dim // head_dim * 2
+            else:
+                num_heads = -1
+
+            if token_mixer == "tpa":
+                kv_rank = 2
+                if key in ["7B", "13B"]:
+                    q_rank = 16
+                else:
+                    q_rank = 8
+            else:
+                q_rank = -1
+                kv_rank = -1
+
             res = get_params(
                 token_mixer=token_mixer,
                 channel_mixer=channel_mixer,
-                num_layer=value["num_layer"],
-                embed_dim=value["embed_dim"],
-                head_dim=value["head_dim"],
+                num_layer=num_layer,
+                embed_dim=embed_dim,
+                head_dim=head_dim,
                 original_vocab_size=original_vocab_size,
+                num_heads=num_heads,
+                q_rank=q_rank,
+                kv_rank=kv_rank,
             )
+            res["token_mixer"] = token_mixer
+            res["channel_mixer"] = channel_mixer
             print_dict(cols, res)

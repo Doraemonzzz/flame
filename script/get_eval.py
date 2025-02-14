@@ -87,6 +87,7 @@ def process_log_file(file_path):
 def process_logs(args):
     """Process log file(s) and create CSV"""
     input_path = args.input_path
+    threshold = args.threshold
     rows = []
 
     if os.path.isfile(input_path):
@@ -98,10 +99,11 @@ def process_logs(args):
         # Process all .log files in directory
         for file_name in os.listdir(input_path):
             if file_name.endswith(".log"):
-                file_path = os.path.join(input_path, file_name)
-                row = process_log_file(file_path)
-                if row:
-                    rows.append(row)
+                if file_name >= threshold:
+                    file_path = os.path.join(input_path, file_name)
+                    row = process_log_file(file_path)
+                    if row:
+                        rows.append(row)
 
     if rows:
         # Define columns order
@@ -150,7 +152,8 @@ def process_logs(args):
             for col in columns:
                 val = row.get(col, "")
                 values.append(str(val) if val is not None else "")
-            print(",".join(values))
+            if values[-1] != "":
+                print(",".join(values))
 
         return rows
     else:
@@ -166,6 +169,11 @@ if __name__ == "__main__":
         "--input_path",
         type=str,
         help="Path to log file or directory containing log files",
+    )
+    parser.add_argument(
+        "--threshold",
+        type=str,
+        default="",
     )
     args = parser.parse_args()
 

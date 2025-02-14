@@ -2,6 +2,7 @@ import argparse
 import os
 import re
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 
@@ -111,6 +112,7 @@ def get_stat(log_file, cols):
 
 def main(args):
     cols = [
+        "name",
         "model_source",
         "model_type",
         "parameters",
@@ -133,11 +135,15 @@ def main(args):
     log_dir = args.log_dir
     if log_dir == "":
         stat, finish = get_stat(log_file, cols)
+        model_name = Path(log_file).stem[18:]
+        stat["name"] = model_name
         if finish:
             print_dict(cols, stat)
     else:
         for log_file in os.listdir(log_dir):
             stat, finish = get_stat(os.path.join(log_dir, log_file), cols)
+            model_name = Path(log_file).stem[18:]
+            stat["name"] = model_name
             if finish:
                 print_dict(cols, stat)
 
