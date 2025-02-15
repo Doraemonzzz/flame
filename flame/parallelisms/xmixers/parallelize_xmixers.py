@@ -28,7 +28,8 @@ from torchtitan.config_manager import TORCH_DTYPE_MAP, JobConfig
 from torchtitan.logging import logger
 from torchtitan.parallelisms.parallel_dims import ParallelDims
 
-from .loss_parallel import LossParallel, PrepareModuleWeight
+from .parallel_utils import (LossParallel, PrepareModuleWeight,
+                             RowwiseGateLinearParallel)
 
 
 def parallelize_xmixers(
@@ -195,7 +196,14 @@ def apply_tp(
             ),
             "channel_mixer.w1": colwise_parallel(),
             "channel_mixer.w2": colwise_parallel(),
-            "channel_mixer.w3": rowwise_parallel(output_layouts=Shard(1)),
+            # "channel_mixer.w3": rowwise_parallel(output_layouts=Shard(1)),
+            "channel_mixer.w3": PrepareModuleWeight(
+                layouts=Shard(1),
+                replicate_name_list=["bias"],
+            ),
+            "channel_mixer.gate_linear_op": RowwiseGateLinearParallel(
+                output_layouts=Shard(1)
+            ),
         }
 
         parallelize_module(
