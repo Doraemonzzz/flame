@@ -41,15 +41,18 @@ class LossParallel(ParallelStyle):
         ) = inputs
         if not isinstance(weight, DTensor):
             weight = DTensor.from_local(weight, device_mesh, [Replicate()])
+        if weight.placements != [Replicate()]:
+            weight = weight.redistribute(placements=[Replicate()], async_op=True)
 
         if bias is not None and not isinstance(bias, DTensor):
             bias = DTensor.from_local(bias, device_mesh, [Replicate()])
+        if bias is not None and bias.placements != [Replicate()]:
+            bias = bias.redistribute(placements=[Replicate()], async_op=True)
 
         if not isinstance(hidden_states, DTensor):
             hidden_states = DTensor.from_local(
                 hidden_states, device_mesh, input_layouts
             )
-
         if hidden_states.placements != desired_input_layouts:
             hidden_states = hidden_states.redistribute(
                 placements=desired_input_layouts, async_op=True
@@ -57,7 +60,6 @@ class LossParallel(ParallelStyle):
 
         if not isinstance(labels, DTensor):
             labels = DTensor.from_local(labels, device_mesh, [Replicate()])
-
         if labels.placements != desired_input_layouts:
             labels = labels.redistribute(
                 placements=desired_input_layouts, async_op=True
@@ -77,8 +79,12 @@ class LossParallel(ParallelStyle):
 
     @staticmethod
     def _prepare_output_fn(output_layouts, use_local_output, mod, outputs, device_mesh):
+        output1, output2 = outputs
         if not isinstance(output1, DTensor) and output1 is not None:
-            output1 = DTensor.from_local(output1, device_mesh, [Replicate()])
+            # output1 = DTensor.from_local(output1, device_mesh, [Replicate()])
+            output1 = DTensor.from_local(output1, device_mesh, output_layouts)
+        if output1 is not None and output1.placements != output_layouts:
+            output1 = output1.redistribute(placements=output_layouts, async_op=True)
 
         return output1, output2
 
@@ -93,4 +99,38 @@ class LossParallel(ParallelStyle):
             partial(
                 self._prepare_output_fn, self.output_layouts, self.use_local_output
             ),
+        )
+
+
+class PrepareModuleWeight(ParallelStyle):
+    def __init__(self, *, layouts: Optional[Placement] = None):
+        super().__init__()
+        self.layouts = layouts
+
+    def _replicate_module_fn(
+        self, name: str, module: nn.Module, device_mesh: DeviceMesh
+    ):
+        for p_name, param in module.named_parameters():
+            # simple replication with fixed ones_ init from LayerNorm/RMSNorm, which allow
+            # us to simply just use from_local
+            replicated_param = torch.nn.Parameter(
+                DTensor.from_local(param, device_mesh, [self.layouts], run_check=False)
+            )
+            module.register_parameter(p_name, replicated_param)
+
+    @staticmethod
+    def _prepare_input_fn(mod, inputs, device_mesh):
+        pass
+
+    @staticmethod
+    def _prepare_output_fn(mod, outputs, device_mesh):
+        pass
+
+    def _apply(self, module: nn.Module, device_mesh: DeviceMesh) -> nn.Module:
+        return distribute_module(
+            module,
+            device_mesh,
+            self._replicate_module_fn,
+            self._prepare_input_fn,
+            self._prepare_output_fn,
         )

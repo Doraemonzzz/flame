@@ -28,7 +28,7 @@ from torchtitan.config_manager import TORCH_DTYPE_MAP, JobConfig
 from torchtitan.logging import logger
 from torchtitan.parallelisms.parallel_dims import ParallelDims
 
-from .loss_parallel import LossParallel
+from .loss_parallel import LossParallel, PrepareModuleWeight
 
 
 def parallelize_xmixers(
@@ -130,8 +130,9 @@ def apply_tp(
                 output_layouts=Shard(1),
             ),
             "model.final_norm": SequenceParallel(),
+            # "lm_head": PrepareModuleWeight(layouts=Replicate()),
             # "loss": LossParallel(
-            #     input_layouts=[Replicate()],
+            #     input_layouts=[Shard(1)],
             #     output_layouts=[Shard(1)],
             # ),
             "lm_head": ColwiseParallel(
