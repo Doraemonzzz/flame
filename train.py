@@ -35,7 +35,7 @@ from flame.utils import device_module, device_type
 # Enable debug tracing on failure: httgs://pytorch.org/docs/stable/elastic/errors.html
 @record
 def main(job_config: JobConfig):
-    # init_logger()
+    torch._dynamo.config.cache_size_limit = job_config.training.cache_size_limit
     logger.info(pformat(job_config.to_dict()))
     logger.info(f"Starting job: {job_config.job.description}")
 

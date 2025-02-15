@@ -130,16 +130,16 @@ def apply_tp(
                 output_layouts=Shard(1),
             ),
             "model.final_norm": SequenceParallel(),
-            # "lm_head": PrepareModuleWeight(layouts=Replicate()),
-            # "loss": LossParallel(
-            #     input_layouts=[Shard(1)],
-            #     output_layouts=[Shard(1)],
-            # ),
-            "lm_head": ColwiseParallel(
-                input_layouts=Shard(1),
-                output_layouts=Shard(-1) if loss_parallel else Replicate(),
-                use_local_output=not loss_parallel,
+            "lm_head": PrepareModuleWeight(layouts=Replicate()),
+            "loss": LossParallel(
+                input_layouts=[Shard(1)],
+                output_layouts=[Shard(1)],
             ),
+            # "lm_head": ColwiseParallel(
+            #     input_layouts=Shard(1),
+            #     output_layouts=Shard(-1) if loss_parallel else Replicate(),
+            #     use_local_output=not loss_parallel,
+            # ),
         },
     )
 

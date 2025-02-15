@@ -371,6 +371,12 @@ class JobConfig:
             action="store_true",
             help="Whether to print debug information",
         )
+        self.parser.add_argument(
+            "--training.cache_size_limit",
+            type=int,
+            default=8,
+            help="The cache size limit for torch.compile",
+        )
         # metrics configs
         self.parser.add_argument(
             "--metrics.log_freq",

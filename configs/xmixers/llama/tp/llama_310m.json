@@ -1,7 +1,7 @@
 {
   "base": 10000,
   "bias": false,
-  "ce_type": "naive",
+  "ce_type": "xopes_flce",
   "embed_dim": 1024,
   "fuse_norm_add": false,
   "gain": 0.01,
