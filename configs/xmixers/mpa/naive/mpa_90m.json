@@ -11,6 +11,7 @@
   "lrpe_type": 3,
   "mid_dim": 2048,
   "model_type": "llama_",
+  "mpa_activation": "none",
   "norm_type": "rmsnorm",
   "num_heads": 24,
   "num_layers": 12,

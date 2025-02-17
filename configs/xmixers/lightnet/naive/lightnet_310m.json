@@ -6,19 +6,17 @@
   "fuse_norm_add": false,
   "gain": 0.01,
   "glu_activation": "silu",
-  "head_dim": 64,
   "init_type": 1,
-  "lrpe_type": 3,
+  "lrpe_type": 1,
   "mid_dim": 2816,
-  "model_type": "llama_",
-  "mpa_activation": "none",
+  "model_type": "lightnet",
   "norm_type": "rmsnorm",
   "num_heads": 32,
   "num_layers": 24,
   "rescale_type": 2,
   "tie_word_embeddings": false,
   "token_mixer_init_type": 4,
-  "token_mixer_type": "mpa",
   "use_gate_linear": true,
-  "use_lrpe": true
+  "use_lrpe": true,
+  "use_output_gate": true
 }

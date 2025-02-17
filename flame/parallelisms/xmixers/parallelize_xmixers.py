@@ -313,7 +313,9 @@ def apply_compile(model: nn.Module):
     repeated structure. Alternatively one can compile the whole model (after applying DP).
     """
     for layer_id, block in model.model.layers.named_children():
-        block = torch.compile(block, fullgraph=True)
+        # TODO: update this later
+        # block = torch.compile(block, fullgraph=True)
+        block = torch.compile(block)
         model.model.layers.register_module(layer_id, block)
 
     logger.info("Compiling each TransformerBlock with torch.compile")

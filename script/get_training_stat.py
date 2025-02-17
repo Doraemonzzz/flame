@@ -29,6 +29,7 @@ def get_stat(log_file, cols):
         res[col] = 0
     res["memory"] = []
     res["tgs"] = []
+    loss = []
     memory_tgs_pattern = r"memory:\s*(\d+\.?\d*)GiB.*?tgs:\s*(\d+(?:,\d+)*)"
     token_loss_pattern = r"token:\s*([\d,]+\.\d+)\s+loss:\s*(\d+\.\d+)"
     mode_pattern = r"'mode':\s*'(\w+)'"
@@ -80,6 +81,7 @@ def get_stat(log_file, cols):
                         float(match.group(1).replace(",", "")) / 1e9, 2
                     )
                     res["loss"] = round(float(match.group(2)), 4)
+                    loss.append(res["loss"])
             for col in [
                 "batch_size",
                 "seq_len",
@@ -98,6 +100,7 @@ def get_stat(log_file, cols):
 
     res["memory"] = round(np.mean(res["memory"][-10:]), 2)
     res["tgs"] = round(np.mean(res["tgs"][-10:]), 2)
+    res["loss_avg_5"] = round(np.mean(loss[-5:]), 4)
 
     # get time
     try:
@@ -117,6 +120,7 @@ def main(args):
         "model_type",
         "parameters",
         "loss",
+        "loss_avg_5",
         "token",
         "memory",
         "tgs",
