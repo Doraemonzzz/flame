@@ -47,7 +47,7 @@ def get_params(
     elif token_mixer == "mpa":
         mid_dim = head_dim * num_heads
         token_mixer_params = embed_dim * (mid_dim * 2 + head_dim + num_heads)
-    elif token_mixer == "tpa":
+    elif token_mixer in ["tpa", "tpa-kv1"]:
         mid_dim = head_dim * num_heads
         token_mixer_params = embed_dim * (
             mid_dim + (q_rank + 2 * kv_rank) * (head_dim + num_heads)
@@ -144,7 +144,7 @@ hyper_params = {
 
 print_array(cols)
 
-token_mixers = ["attn", "mpa", "tpa"]
+token_mixers = ["attn", "mpa", "tpa", "tpa-kv1"]
 channel_mixers = ["glu"]
 
 for token_mixer in token_mixers:
@@ -155,15 +155,18 @@ for token_mixer in token_mixers:
             embed_dim = value["embed_dim"]
             head_dim = value["head_dim"]
             # for tpa
-            if token_mixer == "tpa":
+            if token_mixer in ["tpa", "tpa-kv1"]:
                 num_heads = embed_dim // head_dim * 3
             elif token_mixer == "mpa":
                 num_heads = embed_dim // head_dim * 2
             else:
                 num_heads = -1
 
-            if token_mixer == "tpa":
-                kv_rank = 2
+            if token_mixer in ["tpa", "tpa-kv1"]:
+                if token_mixer == "tpa-kv1":
+                    kv_rank = 1
+                else:
+                    kv_rank = 2
                 if key in ["7B", "13B"]:
                     q_rank = 16
                 else:

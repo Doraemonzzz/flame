@@ -28,7 +28,7 @@ from torchtitan.config_manager import TORCH_DTYPE_MAP, JobConfig
 from torchtitan.logging import logger
 from torchtitan.parallelisms.parallel_dims import ParallelDims
 
-from .parallel_utils import (LossParallel, PrepareModuleWeight,
+from .parallel_utils import (LossParallel, NormParallel, PrepareModuleWeight,
                              RowwiseGateLinearParallel)
 
 
@@ -70,7 +70,11 @@ def parallelize_xmixers(
                 "fused_rmsnorm is not compatible with torch.compile yet. "
                 "Please use rmsnorm or layernorm."
             )
-        apply_compile(model)
+        apply_compile(
+            model,
+            fullgraph=job_config.training.compile_fullgraph,
+            compile_whole_model=job_config.training.compile_whole_model,
+        )
 
     if (
         parallel_dims.dp_shard_enabled or parallel_dims.cp_enabled
@@ -130,7 +134,12 @@ def apply_tp(
                 input_layouts=Replicate(),
                 output_layouts=Shard(1),
             ),
-            "model.final_norm": SequenceParallel(),
+            "model.final_norm": PrepareModuleWeight(layouts=Replicate()),
+            "model.final_norm.op": NormParallel(
+                input_layouts=Shard(1),
+                output_layouts=Shard(1),
+                dim=1,
+            ),
             "lm_head": PrepareModuleWeight(layouts=Replicate()),
             "loss": LossParallel(
                 input_layouts=[Shard(1)],
@@ -172,7 +181,12 @@ def apply_tp(
     #       Examples can be found at https://github.com/pytorch/torchtitan/pull/437
     for _, block in enumerate(model.model.layers):
         layer_plan = {
-            "token_norm": SequenceParallel(),
+            "token_norm": PrepareModuleWeight(layouts=Replicate()),
+            "token_norm.op": NormParallel(
+                input_layouts=Shard(1),
+                output_layouts=Shard(1),
+                dim=1,
+            ),
             "token_mixer": prepare_module_input(
                 input_kwarg_layouts={
                     "x": Shard(1),
@@ -185,7 +199,12 @@ def apply_tp(
             "token_mixer.k_proj": colwise_parallel(),
             "token_mixer.v_proj": colwise_parallel(),
             "token_mixer.o_proj": rowwise_parallel(output_layouts=Shard(1)),
-            "channel_norm": SequenceParallel(),
+            "channel_norm": PrepareModuleWeight(layouts=Replicate()),
+            "channel_norm.op": NormParallel(
+                input_layouts=Shard(1),
+                output_layouts=Shard(1),
+                dim=1,
+            ),
             "channel_mixer": prepare_module_input(
                 input_kwarg_layouts={
                     "x": Shard(1),
@@ -196,7 +215,6 @@ def apply_tp(
             ),
             "channel_mixer.w1": colwise_parallel(),
             "channel_mixer.w2": colwise_parallel(),
-            # "channel_mixer.w3": rowwise_parallel(output_layouts=Shard(1)),
             "channel_mixer.w3": PrepareModuleWeight(
                 layouts=Shard(1),
                 replicate_name_list=["bias"],
@@ -307,18 +325,23 @@ def apply_ac(model: nn.Module, ac_config):
     logger.info(f"Applied {ac_config.mode} activation checkpointing to the model")
 
 
-def apply_compile(model: nn.Module):
+def apply_compile(
+    model: nn.Module, fullgraph: bool = False, compile_whole_model: bool = False
+):
     """
     Apply torch.compile to each TransformerBlock, which makes compilation efficient due to
     repeated structure. Alternatively one can compile the whole model (after applying DP).
     """
-    for layer_id, block in model.model.layers.named_children():
-        # TODO: update this later
-        # block = torch.compile(block, fullgraph=True)
-        block = torch.compile(block)
-        model.model.layers.register_module(layer_id, block)
+    if compile_whole_model:
+        model = torch.compile(model, fullgraph=fullgraph)
+        logger.info("Compiling the whole model with torch.compile")
+    else:
+        for layer_id, block in model.model.layers.named_children():
+            # TODO: update this later
+            block = torch.compile(block, fullgraph=fullgraph)
+            model.model.layers.register_module(layer_id, block)
 
-    logger.info("Compiling each TransformerBlock with torch.compile")
+        logger.info("Compiling each TransformerBlock with torch.compile")
 
 
 def apply_fsdp(

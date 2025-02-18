@@ -8,7 +8,7 @@
   "glu_activation": "silu",
   "head_dim": 128,
   "init_type": 1,
-  "kv_rank": 2,
+  "kv_rank": 1,
   "lrpe_type": 3,
   "mid_dim": 6912,
   "model_type": "llama_",

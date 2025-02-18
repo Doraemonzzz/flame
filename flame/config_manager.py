@@ -350,6 +350,16 @@ class JobConfig:
             help="Whether to compile the model",
         )
         self.parser.add_argument(
+            "--training.compile_fullgraph",
+            action="store_true",
+            help="Whether to compile the model with fullgraph",
+        )
+        self.parser.add_argument(
+            "--training.compile_whole_model",
+            action="store_true",
+            help="Whether to compile the whole model",
+        )
+        self.parser.add_argument(
             "--training.gc_freq",
             type=int,
             default=50,
