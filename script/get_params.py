@@ -56,8 +56,8 @@ def get_params(
             mid_dim + (q_rank + 2 * kv_rank) * (head_dim + num_heads)
         )
     elif token_mixer == "mla":
-        q_head_dim = qk_rope_head_dim + kv_lora_rank
         qk_nope_head_dim = head_dim
+        q_head_dim = qk_nope_head_dim + qk_rope_head_dim
         v_head_dim = head_dim
         token_mixer_params = (
             embed_dim * q_lora_rank
@@ -66,6 +66,11 @@ def get_params(
             + kv_lora_rank * num_heads * (qk_nope_head_dim + v_head_dim)
             + num_heads * v_head_dim * embed_dim
         )
+        a1 = q_lora_rank
+        a2 = num_heads * q_head_dim
+        a3 = kv_lora_rank + qk_rope_head_dim
+        a4 = num_heads * (qk_nope_head_dim + v_head_dim)
+        a5 = num_heads * v_head_dim
 
     if channel_mixer == "ffn":
         coef = 2
@@ -134,7 +139,7 @@ hyper_params = {
         "num_layer": 12,
         "embed_dim": 768,
         "head_dim": 64,
-        "q_lora_rank": 256,
+        "q_lora_rank": 512,
         "kv_lora_rank": 256,
         "qk_rope_head_dim": 64,
     },
@@ -142,23 +147,23 @@ hyper_params = {
         "num_layer": 24,
         "embed_dim": 1024,
         "head_dim": 64,
-        "q_lora_rank": 384,
-        "kv_lora_rank": 256,
+        "q_lora_rank": 512,
+        "kv_lora_rank": 512,
         "qk_rope_head_dim": 64,
     },
     "1.5B": {
         "num_layer": 24,
         "embed_dim": 2048,
         "head_dim": 128,
-        "q_lora_rank": 768,
-        "kv_lora_rank": 512,
+        "q_lora_rank": 1536,
+        "kv_lora_rank": 384,
         "qk_rope_head_dim": 128,
     },
     "3B": {
         "num_layer": 32,
         "embed_dim": 2560,
         "head_dim": 128,
-        "q_lora_rank": 1024,
+        "q_lora_rank": 2048,
         "kv_lora_rank": 512,
         "qk_rope_head_dim": 128,
     },
@@ -166,7 +171,7 @@ hyper_params = {
         "num_layer": 32,
         "embed_dim": 4096,
         "head_dim": 128,
-        "q_lora_rank": 1792,
+        "q_lora_rank": 3584,
         "kv_lora_rank": 512,
         "qk_rope_head_dim": 128,
     },
@@ -174,7 +179,7 @@ hyper_params = {
         "num_layer": 40,
         "embed_dim": 5120,
         "head_dim": 128,
-        "q_lora_rank": 2304,
+        "q_lora_rank": 4608,
         "kv_lora_rank": 512,
         "qk_rope_head_dim": 128,
     },
