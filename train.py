@@ -545,7 +545,7 @@ def main(job_config: JobConfig):
                         )
                         loss = output.loss / gradient_accumulation_steps
                         loss.backward()
-                losses.append(loss)
+                losses.append(loss * gradient_accumulation_steps)
             loss = sum(losses) / len(losses)
 
             if job_config.training.debug:
