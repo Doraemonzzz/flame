@@ -39,26 +39,26 @@ def evaluate_model(args):
     # Get random prompts
     test_prompts = generate_random_prompts()
 
-    # print("\nStarting generation tests...")
-    # for i, prompt in enumerate(test_prompts, 1):
-    #     print(f"\nTest {i}:")
-    #     print(f"Input prompt: {prompt}")
+    print("\nStarting generation tests...")
+    for i, prompt in enumerate(test_prompts, 1):
+        print(f"\nTest {i}:")
+        print(f"Input prompt: {prompt}")
 
-    #     # Encode input
-    #     inputs = tokenizer(prompt, return_tensors="pt").to(device)
+        # Encode input
+        inputs = tokenizer(prompt, return_tensors="pt").to(device)
 
-    #     # Generate text
-    #     with torch.no_grad():
-    #         outputs = model.generate(
-    #             **inputs,
-    #             max_new_tokens=max_new_tokens,
-    #             pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
-    #         )
+        # Generate text
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
+            )
 
-    #     # Decode generated text
-    #     generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    #     print(f"Generated output: {generated_text}")
-    #     print("-" * 50)
+        # Decode generated text
+        generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        print(f"Generated output: {generated_text}")
+        print("-" * 50)
 
     print("\nStarting batch generation tests...")
     # Encode input

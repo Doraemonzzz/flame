@@ -472,6 +472,7 @@ def main(job_config: JobConfig):
         mean = param.data.mean().item()
         logger.info(f"{name}, norm: {norm:.4f}, mean: {mean}")
 
+    gradient_accumulation_steps = job_config.training.gradient_accumulation_steps
     with maybe_enable_profiling(
         job_config, global_step=train_state.step
     ) as torch_profiler, maybe_enable_memory_snapshot(
@@ -513,6 +514,7 @@ def main(job_config: JobConfig):
                     else None
                 )
 
+                # TODO: check gradient accumulation
                 if parallel_dims.pp_enabled:
                     # Pipeline Parallel forward / backward inside step() call
                     is_last_stage = pp_mesh.get_local_rank() == pp_mesh.size() - 1
@@ -541,7 +543,7 @@ def main(job_config: JobConfig):
                             labels=labels,
                             cu_seqlens=cu_seqlens,
                         )
-                        loss = output.loss
+                        loss = output.loss / gradient_accumulation_steps
                         loss.backward()
                 losses.append(loss)
             loss = sum(losses) / len(losses)
