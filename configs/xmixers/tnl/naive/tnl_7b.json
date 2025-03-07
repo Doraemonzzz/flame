@@ -10,7 +10,7 @@
   "k_activation": "silu",
   "k_norm": false,
   "lrpe_type": 1,
-  "mid_dim": 11520,
+  "mid_dim": 11008,
   "model_type": "tnl",
   "norm_type": "rmsnorm",
   "num_heads": 32,

@@ -15,6 +15,7 @@
   "norm_type": "rmsnorm",
   "num_heads": 64,
   "num_layers": 32,
+  "q_rank": -1,
   "rescale_type": 2,
   "tie_word_embeddings": false,
   "token_mixer_init_type": 4,
