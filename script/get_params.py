@@ -52,9 +52,9 @@ def get_params(
         token_mixer_params = embed_dim * (mid_dim + head_dim + num_heads) * 2
     elif token_mixer == "mpa-q-16":
         mid_dim = head_dim * num_heads
-        token_mixer_params = embed_dim * (mid_dim + (head_dim + num_heads) * 2) + embed_dim * q_rank * (
-            head_dim + num_heads
-        )
+        token_mixer_params = embed_dim * (
+            mid_dim + (head_dim + num_heads) * 2
+        ) + embed_dim * q_rank * (head_dim + num_heads)
     elif token_mixer in ["tpa", "tpa-kv1"]:
         mid_dim = head_dim * num_heads
         token_mixer_params = embed_dim * (
