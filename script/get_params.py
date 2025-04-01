@@ -38,6 +38,7 @@ def get_params(
     q_lora_rank=512,
     kv_lora_rank=512,
     qk_rope_head_dim=64,
+    mfa_head_dim=128,
 ):
     num_heads = embed_dim // head_dim if num_heads == -1 else num_heads
     vocab_size = pad_embed_dim(original_vocab_size)
@@ -76,6 +77,19 @@ def get_params(
         a3 = kv_lora_rank + qk_rope_head_dim
         a4 = num_heads * (qk_nope_head_dim + v_head_dim)
         a5 = num_heads * v_head_dim
+    elif token_mixer == "mfa":
+        mid_dim = mfa_head_dim * num_heads
+        token_mixer_params = (
+            embed_dim * (3 + num_heads) * mfa_head_dim
+            + num_heads * mfa_head_dim * mfa_head_dim
+        )
+    elif token_mixer == "mfa-share":
+        mid_dim = mfa_head_dim * num_heads
+        token_mixer_params = (
+            embed_dim * (2 + num_heads) * mfa_head_dim
+            + 2 * num_heads * mfa_head_dim * mfa_head_dim
+            + num_heads * mfa_head_dim
+        )
 
     if channel_mixer == "ffn":
         coef = 2
@@ -110,6 +124,7 @@ def get_params(
         "q_lora_rank": q_lora_rank,
         "kv_lora_rank": kv_lora_rank,
         "qk_rope_head_dim": qk_rope_head_dim,
+        "mfa_head_dim": mfa_head_dim,
     }
     return res
 
@@ -137,6 +152,7 @@ cols = [
     "q_lora_rank",
     "kv_lora_rank",
     "qk_rope_head_dim",
+    "mfa_head_dim",
 ]
 
 hyper_params = {
@@ -147,6 +163,7 @@ hyper_params = {
         "q_lora_rank": 512,
         "kv_lora_rank": 256,
         "qk_rope_head_dim": 64,
+        "mfa_head_dim": 128,
     },
     "310m": {
         "num_layer": 24,
@@ -155,6 +172,7 @@ hyper_params = {
         "q_lora_rank": 512,
         "kv_lora_rank": 512,
         "qk_rope_head_dim": 64,
+        "mfa_head_dim": 128,
     },
     "1.5B": {
         "num_layer": 24,
@@ -163,6 +181,7 @@ hyper_params = {
         "q_lora_rank": 1536,
         "kv_lora_rank": 384,
         "qk_rope_head_dim": 128,
+        "mfa_head_dim": 256,
     },
     "3B": {
         "num_layer": 32,
@@ -171,6 +190,7 @@ hyper_params = {
         "q_lora_rank": 2048,
         "kv_lora_rank": 512,
         "qk_rope_head_dim": 128,
+        "mfa_head_dim": 256,
     },
     "7B": {
         "num_layer": 32,
@@ -179,6 +199,7 @@ hyper_params = {
         "q_lora_rank": 3584,
         "kv_lora_rank": 512,
         "qk_rope_head_dim": 128,
+        "mfa_head_dim": 256,
     },
     "13B": {
         "num_layer": 40,
@@ -187,12 +208,13 @@ hyper_params = {
         "q_lora_rank": 4608,
         "kv_lora_rank": 512,
         "qk_rope_head_dim": 128,
+        "mfa_head_dim": 256,
     },
 }
 
 print_array(cols)
 
-token_mixers = ["attn", "mpa", "mpa-q-16", "tpa", "tpa-kv1", "mla"]
+token_mixers = ["attn", "mpa", "mpa-q-16", "tpa", "tpa-kv1", "mla", "mfa", "mfa-share"]
 channel_mixers = ["glu"]
 
 for token_mixer in token_mixers:
@@ -205,11 +227,24 @@ for token_mixer in token_mixers:
             q_lora_rank = value["q_lora_rank"]
             kv_lora_rank = value["kv_lora_rank"]
             qk_rope_head_dim = value["qk_rope_head_dim"]
+            mfa_head_dim = value["mfa_head_dim"]
             # for tpa
             if token_mixer in ["tpa", "tpa-kv1"]:
                 num_heads = embed_dim // head_dim * 3
-            elif token_mixer == "mpa":
+            elif token_mixer in [
+                "mpa",
+            ]:
                 num_heads = embed_dim // head_dim * 2
+            elif token_mixer == "mfa":
+                if key in ["7B", "13B"]:
+                    num_heads = int(embed_dim // mfa_head_dim * 3.5)
+                else:
+                    num_heads = int(embed_dim // mfa_head_dim * 3.25)
+            elif token_mixer == "mfa-share":
+                if key in ["7B", "13B"]:
+                    num_heads = int(embed_dim // mfa_head_dim * 3.5)
+                else:
+                    num_heads = int(embed_dim // mfa_head_dim * 3.25)
             elif token_mixer == "mpa-q-16":
                 if key in ["7B", "13B"]:
                     num_heads = int(embed_dim // head_dim * 3)
@@ -247,6 +282,7 @@ for token_mixer in token_mixers:
                 q_lora_rank=q_lora_rank,
                 kv_lora_rank=kv_lora_rank,
                 qk_rope_head_dim=qk_rope_head_dim,
+                mfa_head_dim=mfa_head_dim,
             )
             res["token_mixer"] = token_mixer
             res["channel_mixer"] = channel_mixer
