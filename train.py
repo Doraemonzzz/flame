@@ -29,7 +29,7 @@ from flame.data import build_dataloader, shuffle
 from flame.metrics import build_device_memory_monitor, build_metric_logger
 from flame.optimizer import build_lr_schedulers, build_optimizers
 from flame.parallelisms import parallelize_model, pipeline_model
-from flame.utils import device_module, device_type
+from flame.utils import device_module, device_type, print_grad_norm
 
 
 # Enable debug tracing on failure: httgs://pytorch.org/docs/stable/elastic/errors.html
@@ -548,16 +548,6 @@ def main(job_config: JobConfig):
                 losses.append(loss * gradient_accumulation_steps)
             loss = sum(losses) / len(losses)
 
-            if job_config.training.debug:
-                for name, param in model.named_parameters():
-                    if param.grad is not None:
-                        layer_grad_norm = param.grad.data.norm(2).item()
-                        norm = param.data.norm(2).item()
-                        mean = param.data.mean().item()
-                        logger.info(
-                            f"{name}, grad norm: {layer_grad_norm:.4f}, norm: {norm:.4f}, mean: {mean}"
-                        )
-
             # clip gradients
             grad_norm = utils.clip_grad_norm_(
                 [p for m in model_parts for p in m.parameters()],
@@ -574,6 +564,9 @@ def main(job_config: JobConfig):
             if job_config.training.skip_nan_inf and (
                 grad_norm.isnan() or grad_norm.isinf()
             ):
+                if job_config.training.debug:
+                    print_grad_norm(model, logger)
+
                 logger.warning(
                     f"Skipping optimizer step - detected invalid gradient norm: {grad_norm:.4f}"
                 )
@@ -682,6 +675,9 @@ def main(job_config: JobConfig):
                 data_loading_times.clear()
                 time_last_log = time.perf_counter()
                 device_memory_monitor.reset_peak_stats()
+
+                if job_config.training.debug:
+                    print_grad_norm(model, logger)
 
             checkpoint.save(
                 train_state.step, force=(train_state.step == job_config.training.steps)

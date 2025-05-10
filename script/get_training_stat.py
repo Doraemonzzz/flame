@@ -52,7 +52,6 @@ def get_stat(log_file, cols):
                             time_match.group(1), "%Y-%m-%d %H:%M:%S"
                         )
 
-                        # 更新最早和最晚时间
                         if earliest_time is None or current_time < earliest_time:
                             earliest_time = current_time
                         if latest_time is None or current_time > latest_time:
@@ -137,24 +136,28 @@ def main(args):
 
     log_file = args.log_file
     log_dir = args.log_dir
+    threshold = args.threshold
     if log_dir == "":
-        stat, finish = get_stat(log_file, cols)
-        model_name = Path(log_file).stem[18:]
-        stat["name"] = model_name
-        if finish:
-            print_dict(cols, stat)
-    else:
-        for log_file in os.listdir(log_dir):
-            stat, finish = get_stat(os.path.join(log_dir, log_file), cols)
+        if log_file >= threshold:
+            stat, finish = get_stat(log_file, cols)
             model_name = Path(log_file).stem[18:]
             stat["name"] = model_name
             if finish:
                 print_dict(cols, stat)
+    else:
+        for log_file in os.listdir(log_dir):
+            if log_file >= threshold:
+                stat, finish = get_stat(os.path.join(log_dir, log_file), cols)
+                model_name = Path(log_file).stem[18:]
+                stat["name"] = model_name
+                if finish:
+                    print_dict(cols, stat)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--log_file", type=str, default="")
     parser.add_argument("--log_dir", type=str, default="")
+    parser.add_argument("--threshold", type=str, default="20250101")
     args = parser.parse_args()
     main(args)

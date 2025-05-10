@@ -558,3 +558,14 @@ def clip_grad_norm_(
 
     clip_grads_with_norm_(parameters, max_norm, total_norm, foreach)
     return total_norm
+
+
+def print_grad_norm(model, logger):
+    for name, param in model.named_parameters():
+        if param.grad is not None:
+            layer_grad_norm = param.grad.data.norm(2).item()
+            norm = param.data.norm(2).item()
+            mean = param.data.mean().item()
+            logger.info(
+                f"{name}, grad norm: {layer_grad_norm:.4f}, norm: {norm:.4f}, mean: {mean}"
+            )

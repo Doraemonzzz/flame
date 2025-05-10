@@ -173,7 +173,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--threshold",
         type=str,
-        default="",
+        default="20250101",
     )
     args = parser.parse_args()
 

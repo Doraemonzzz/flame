@@ -87,7 +87,7 @@ def get_params(
         mid_dim = mfa_head_dim * num_heads
         token_mixer_params = (
             embed_dim * (2 + num_heads) * mfa_head_dim
-            + 2 * num_heads * mfa_head_dim * mfa_head_dim
+            + (num_heads + 1) * mfa_head_dim * mfa_head_dim
             + num_heads * mfa_head_dim
         )
 
@@ -236,12 +236,16 @@ for token_mixer in token_mixers:
             ]:
                 num_heads = embed_dim // head_dim * 2
             elif token_mixer == "mfa":
-                if key in ["7B", "13B"]:
+                if key in ["13B"]:
+                    num_heads = int(embed_dim // mfa_head_dim * 3.75)
+                elif key in ["7B"]:
                     num_heads = int(embed_dim // mfa_head_dim * 3.5)
                 else:
                     num_heads = int(embed_dim // mfa_head_dim * 3.25)
             elif token_mixer == "mfa-share":
-                if key in ["7B", "13B"]:
+                if key in ["13B"]:
+                    num_heads = int(embed_dim // mfa_head_dim * 3.75)
+                elif key in ["7B"]:
                     num_heads = int(embed_dim // mfa_head_dim * 3.5)
                 else:
                     num_heads = int(embed_dim // mfa_head_dim * 3.25)
