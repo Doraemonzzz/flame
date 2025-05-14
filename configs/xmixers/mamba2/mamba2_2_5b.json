@@ -2,6 +2,7 @@
   "base": 10000,
   "bias": false,
   "ce_type": "xopes_flce",
+  "d_state": 128,
   "embed_dim": 2560,
   "fuse_norm_add": false,
   "gain": 0.01,
@@ -22,6 +23,5 @@
   "token_mixer_init_type": 4,
   "use_gate_linear": true,
   "v_activation": "silu",
-  "v_norm": false,
-  "d_state": 128
+  "v_norm": false
 }

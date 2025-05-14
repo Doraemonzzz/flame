@@ -20,9 +20,9 @@
   "tie_word_embeddings": false,
   "token_mixer_init_type": 4,
   "use_gate_linear": true,
+  "use_lightning": true,
   "use_lower_bound": false,
   "use_lrpe": false,
   "use_output_gate": true,
-  "use_tpe": false,
-  "use_lightning": true
+  "use_tpe": false
 }

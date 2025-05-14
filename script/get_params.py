@@ -214,7 +214,17 @@ hyper_params = {
 
 print_array(cols)
 
-token_mixers = ["attn", "mpa", "mpa-q-16", "tpa", "tpa-kv1", "mla", "mfa", "mfa-share", "mamba2"]
+token_mixers = [
+    "attn",
+    "mpa",
+    "mpa-q-16",
+    "tpa",
+    "tpa-kv1",
+    "mla",
+    "mfa",
+    "mfa-share",
+    "mamba2",
+]
 channel_mixers = ["glu"]
 
 for token_mixer in token_mixers:

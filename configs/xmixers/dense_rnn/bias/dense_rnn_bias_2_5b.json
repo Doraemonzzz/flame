@@ -24,9 +24,9 @@
   "tie_word_embeddings": false,
   "token_mixer_init_type": 4,
   "use_beta": true,
-  "use_offset": true,
   "use_decay": true,
   "use_gate_linear": true,
+  "use_offset": true,
   "v_activation": "silu",
   "v_norm": false
 }

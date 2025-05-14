@@ -18,15 +18,15 @@
   "num_layers": 32,
   "q_activation": "silu",
   "q_norm": false,
+  "rank": 2,
   "rescale_type": 2,
   "scalar_decay": true,
   "tie_word_embeddings": false,
   "token_mixer_init_type": 4,
+  "token_mixer_type": "delta_product_unit",
   "use_beta": true,
   "use_decay": true,
   "use_gate_linear": true,
   "v_activation": "silu",
-  "v_norm": false,
-  "token_mixer_type": "delta_product_unit",
-  "rank": 2
+  "v_norm": false
 }

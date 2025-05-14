@@ -2,10 +2,12 @@
   "base": 10000,
   "bias": false,
   "ce_type": "xopes_flce",
+  "d_state": 128,
   "embed_dim": 768,
   "fuse_norm_add": false,
   "gain": 0.01,
   "glu_activation": "silu",
+  "headdim": 64,
   "init_type": 1,
   "k_activation": "silu",
   "k_norm": false,
@@ -22,7 +24,5 @@
   "token_mixer_init_type": 4,
   "use_gate_linear": true,
   "v_activation": "silu",
-  "v_norm": false,
-  "d_state": 128,
-  "headdim": 64
+  "v_norm": false
 }
