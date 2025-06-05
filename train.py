@@ -564,8 +564,8 @@ def main(job_config: JobConfig):
             if job_config.training.skip_nan_inf and (
                 grad_norm.isnan() or grad_norm.isinf()
             ):
-                if job_config.training.debug:
-                    print_grad_norm(model, logger)
+                grad_norm_dict = print_grad_norm(model, logger)
+                metric_logger.log(grad_norm_dict, step=train_state.step)
 
                 logger.warning(
                     f"Skipping optimizer step - detected invalid gradient norm: {grad_norm:.4f}"
@@ -660,6 +660,12 @@ def main(job_config: JobConfig):
                     "memory/num_alloc_retries": device_mem_stats.num_alloc_retries,
                     "memory/num_ooms": device_mem_stats.num_ooms,
                 }
+
+                grad_norm_dict = print_grad_norm(model, logger)
+                metrics.update(grad_norm_dict)
+                # if job_config.training.debug:
+                #     print_grad_norm(model, logger)
+
                 metric_logger.log(metrics, step=train_state.step)
 
                 logger.info(
@@ -675,9 +681,6 @@ def main(job_config: JobConfig):
                 data_loading_times.clear()
                 time_last_log = time.perf_counter()
                 device_memory_monitor.reset_peak_stats()
-
-                if job_config.training.debug:
-                    print_grad_norm(model, logger)
 
             checkpoint.save(
                 train_state.step, force=(train_state.step == job_config.training.steps)

@@ -561,11 +561,15 @@ def clip_grad_norm_(
 
 
 def print_grad_norm(model, logger):
+    grad_norm_dict = {}
     for name, param in model.named_parameters():
         if param.grad is not None:
             layer_grad_norm = param.grad.data.norm(2).item()
             norm = param.data.norm(2).item()
             mean = param.data.mean().item()
-            logger.info(
-                f"{name}, grad norm: {layer_grad_norm:.4f}, norm: {norm:.4f}, mean: {mean}"
-            )
+            grad_norm_dict[f"{name}.grad_norm"] = layer_grad_norm
+            # logger.info(
+            #     f"{name}, grad norm: {layer_grad_norm:.4f}, norm: {norm:.4f}, mean: {mean}"
+            # )
+
+    return grad_norm_dict

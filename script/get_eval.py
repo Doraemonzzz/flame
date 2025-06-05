@@ -152,8 +152,12 @@ def process_logs(args):
             for col in columns:
                 val = row.get(col, "")
                 values.append(str(val) if val is not None else "")
-            if values[-1] != "":
+
+            if args.full == "True":
                 print(",".join(values))
+            else:
+                if values[-1] != "":
+                    print(",".join(values))
 
         return rows
     else:
@@ -174,6 +178,11 @@ if __name__ == "__main__":
         "--threshold",
         type=str,
         default="20250101",
+    )
+    parser.add_argument(
+        "--full",
+        type=str,
+        default="False",
     )
     args = parser.parse_args()
 
