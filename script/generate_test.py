@@ -35,6 +35,7 @@ def evaluate_model(args):
         torch_dtype=torch.float16 if device == "cuda" else torch.float32,
     ).to(device)
     model.eval()
+    print(model)
 
     # Get random prompts
     test_prompts = generate_random_prompts()

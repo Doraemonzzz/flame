@@ -572,6 +572,7 @@ def main(job_config: JobConfig):
                 )
                 optimizers.zero_grad()
                 train_state.skipped_step += 1
+                assert False
             else:
                 optimizers.step()
             lr_schedulers.step()
