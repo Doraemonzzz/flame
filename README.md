@@ -388,6 +388,33 @@ options:
 ```
 </details>
 
+### Training xmixers models
+
+To train xmixers models, you can use script in `script/training/train_script.sh`, for example:
+
+```sh
+config_dir=xmixers/decay_linear_transformer/hgrn3/0_99
+bash train_script.sh 1 false $config_dir dlt_hgrn3_0_99_90m 32 1 2048 false dlt_hgrn3_0_99_90m 20000
+```
+
+> Before running the script, you need to install the dependencies and download the dataset and update some variables in the script, for example `code_dir`, `ckpt_dir`, `logger_dir`, `eval_code_dir`, `eval_dir` in `convert_and_eval.sh`, `code_dir`, `ckpt_dir`, `data_cache` in `train_script.sh`, `code_path`, `exp_path` in `train.sh`.
+
+
+This scirpt will train a model using fineweb-edu-10b dataset in 20k steps, after training, the model will be evaluated. We also list all the hyper-parameters of different model sizes in the following table:
+
+| Model Size | Batch Size | Gradient Accumulation Steps | Num GPUs |
+|-------|-------|-------|-------|
+| 90M | 32 | 1 | 8 |
+| 340M | 32 | 1 | 8 |
+| 1.2B | 8 | 4 | 8 |
+| 2.5B | 4 | 8 | 8 |
+| 7.0B | 4 | 4 | 16 |
+
+
+
+
+
+
 ### Training with multiple datasets
 
 If you wish to train a model with all-round capabilities (e.g., code, math, and multilingual ability), it's necessary to train on multiple datasets.
